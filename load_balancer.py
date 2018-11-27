@@ -180,7 +180,7 @@ def check_health():
 
         update_available_instances()
         dif = NUMBER_OF_INSTANCES - len(RUNNING_INSTANCES)
-        print('AVAILABLE INSTANCES: 'dif)
+        print('AVAILABLE INSTANCES: ', dif)
         if(dif != 0):
             if(dif < 0):
                 for i in range(-dif):
