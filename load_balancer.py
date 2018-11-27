@@ -5,6 +5,7 @@ import time
 import signal
 from flask import Flask, request, jsonify, Response
 import json
+import sys
 
 # CONSTANTS
 TIMEOUT = 5
@@ -38,8 +39,10 @@ TAGS =[{
         "ResourceType": "instance",
         "Tags": [{"Key": "Owner","Value": OWNER_NAME}]
         }]
-EC2 = boto3.resource('ec2')
-client = boto3.client("ec2", region_name="us-east-1")
+ACCESS_ID = sys.argv[1]
+ACCESS_KEY = sys.argv[2]
+EC2 = boto3.resource('ec2', region_name='us-east-1', aws_access_key_id=ACCESS_ID, aws_secret_access_key=ACCESS_KEY)
+client = boto3.client('ec2', region_name='us-east-1', aws_access_key_id=ACCESS_ID, aws_secret_access_key=ACCESS_KEY)
 
 
 def get_instances_data():

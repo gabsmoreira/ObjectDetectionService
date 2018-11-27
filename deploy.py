@@ -12,6 +12,26 @@ IMAGE_ID = data["ImageId"]
 DESCRIPTION = 'None'
 OWNER_NAME = 'admin'
 
+AWSCRED = [data["AWSAccessKeyId"], data["AWSSecretAccessKey"]]
+
+INIT_SCRIPT = f"""#!/bin/bash
+            echo "updating apt-get ..."
+            sudo apt-get -y update 
+            sudo apt-get install -y python3-pip
+
+            echo "Installing python dependencies ..."
+            sudo pip3 install flask
+            sudo pip3 install boto3
+            echo "Cloning git repo ..."
+            pwd
+            cd
+            pwd
+            git clone https://github.com/gabsmoreira/ObjectDetectionService.git
+            cd ObjectDetectionService
+            echo "Starting server ..."
+            python3 load_balancer.py {AWSCRED[0]} {AWSCRED[1]}
+            """
+
 ec2 = boto3.client("ec2", region_name="us-east-1")
 
 
@@ -60,8 +80,8 @@ if(security_group_exists == False):
             'ToPort': 22,
             'IpRanges': [{'CidrIp': '0.0.0.0/0'}]},
             {'IpProtocol': 'tcp',
-            'FromPort': 5000,
-            'ToPort': 5000,
+            'FromPort': 8000,
+            'ToPort': 8000,
             'IpRanges': [{'CidrIp': '0.0.0.0/0'}]}
         ])
 
@@ -82,26 +102,7 @@ try:
             "ResourceType": "instance",
             "Tags": [{"Key": "Owner","Value": OWNER_NAME}]
             }],
-        UserData=
-            """#!/bin/bash
-            echo "updating apt-get ..."
-            sudo apt-get -y update 
-            sudo apt-get install -y python3-pip
-
-            echo "Installing python dependencies ..."
-            sudo pip3 install flask
-            sudo pip3 install numpy
-            sudo pip3 install gluoncv
-            sudo pip3 install mxnet 
-            echo "Cloning git repo ..."
-            pwd
-            cd
-            pwd
-            git clone https://github.com/gabsmoreira/ObjectDetectionService.git
-            cd ObjectDetectionService
-            echo "Starting server ..."
-            python3 load_balancer.py
-            """
+        UserData=INIT_SCRIPT
         )
     print("Instance creation response: \n", instance)
     # pass
