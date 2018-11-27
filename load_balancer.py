@@ -8,7 +8,7 @@ import json
 import sys
 
 # CONSTANTS
-TIMEOUT = 5
+TIMEOUT = 10
 RUN_ALL = True
 RUNNING_INSTANCES = []
 NUMBER_OF_INSTANCES = 3
@@ -125,9 +125,14 @@ def get_instances_ip():
     for instance in EC2.instances.all():
         if(instance.tags == None):
           continue
+        #print(instance.tags)
+        if({"Key": "Type","Value": "loadbalancer"} in instance.tags):
+          continue
+        #print(instance.tags)
         for idx, tag in enumerate(instance.tags, start=1):
-            if(tag['Value'] == OWNER_NAME and instance.state['Code'] != 48):
-                running_instances.append({instance.id : instance.public_dns_name})
+           if(tag['Value'] == OWNER_NAME and instance.state['Code'] != 48):
+               running_instances.append({instance.id : instance.public_dns_name})
+    print(running_instances)
     return running_instances
 
 
@@ -136,6 +141,7 @@ def update_available_instances():
     global RUNNING_INSTANCES
     # print('Updating available instances')
     RUNNING_INSTANCES = get_instances_ip()
+    print('R: ', RUNNING_INSTANCES)
     
 
 def destroy_instance(instance_id):
@@ -143,7 +149,7 @@ def destroy_instance(instance_id):
     for instance in EC2.instances.all():
         if(instance.tags == None):
           continue
-        for idx, tag in enumerate(instance['Tags'], start=1):
+        for idx, tag in enumerate(instance.tags, start=1):
           if(tag['Key'] == 'Type' and tag['Value'] != 'loadbalancer'):
             for idx, tag in enumerate(instance.tags, start=1):
                 if(tag['Value'] == OWNER_NAME and instance.state['Code'] != 48 and instance.id == instance_id):
@@ -172,9 +178,9 @@ def check_health():
             # print(instance)
             for instance_id in instance:
                 ip = instance[instance_id]
-                # print('http://' + ip +':5000/healthcheck')
+                print('http://' + ip +':5000/healthcheck')
                 try:
-                    # formated_ip = ip.replace('.', '-')
+                    #print('http://' + ip +':5000/healthcheck')
                     r = requests.get('http://' + ip +':5000/healthcheck', timeout=TIMEOUT)
                     # print(f'Requested: {ip}')
                 except Exception as e:
@@ -183,7 +189,8 @@ def check_health():
                     create_instance(KEY_PAIR_NAME, SECURITY_GROUP_IDs, INSTANCE_TYPE)
 
         update_available_instances()
-        dif = NUMBER_OF_INSTANCES - len(RUNNING_INSTANCES) 
+        dif = NUMBER_OF_INSTANCES - len(RUNNING_INSTANCES)
+        print(dif)
         if(dif != 0):
             if(dif < 0):
                 for i in range(-dif):
