@@ -42,7 +42,7 @@ TAGS =[{
 ACCESS_ID = sys.argv[1]
 ACCESS_KEY = sys.argv[2]
 EC2 = boto3.resource('ec2', region_name='us-east-1', aws_access_key_id=ACCESS_ID, aws_secret_access_key= ACCESS_KEY)
-client = boto3.client('ec2', region_name='us-east-1', , aws_access_key_id=ACCESS_ID, aws_secret_access_key= ACCESS_KEY)
+client = boto3.client('ec2', region_name='us-east-1', aws_access_key_id=ACCESS_ID, aws_secret_access_key= ACCESS_KEY)
 
 
 def get_instances_data():
