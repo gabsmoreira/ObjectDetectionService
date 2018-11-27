@@ -147,16 +147,16 @@ def destroy_instance(instance_id):
           if(tag['Key'] == 'Type' and tag['Value'] != 'loadbalancer'):
             for idx, tag in enumerate(instance.tags, start=1):
                 if(tag['Value'] == OWNER_NAME and instance.state['Code'] != 48 and instance.id == instance_id):
-                waiter = client.get_waiter('instance_terminated')
-                try:
-                    update_available_instances()
-                    client.terminate_instances(InstanceIds=[instance.id])
-                    waiter.wait(InstanceIds=[instance.id])
-                    # INSTANCES_RUNNING -=1
-                    print('Destroyed instance ', instance.id)
+                    waiter = client.get_waiter('instance_terminated')
+                    try:
+                        update_available_instances()
+                        client.terminate_instances(InstanceIds=[instance.id])
+                        waiter.wait(InstanceIds=[instance.id])
+                        # INSTANCES_RUNNING -=1
+                        print('Destroyed instance ', instance.id)
 
-                except:
-                    print('Error to delete instance')
+                    except:
+                        print('Error to delete instance')
                 # ec2.instances.filter(InstasnceIds=[instance.id]).terminate()
 
 def signal_handler(sig, frame):

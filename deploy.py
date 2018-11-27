@@ -100,7 +100,7 @@ try:
         SecurityGroupIds=[security_group_id],
         TagSpecifications=[{
             "ResourceType": "instance",
-            "Tags": [{"Key": "Owner","Value": OWNER_NAME}]
+            "Tags": [{"Key": "Owner","Value": OWNER_NAME}, {"Key": "Type","Value": "loadbalancer"}]
             }],
         UserData=INIT_SCRIPT
         )
