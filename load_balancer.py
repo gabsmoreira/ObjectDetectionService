@@ -39,10 +39,10 @@ TAGS =[{
         "ResourceType": "instance",
         "Tags": [{"Key": "Owner","Value": OWNER_NAME}]
         }]
-ACCESS_ID = sys.argv[1]
-ACCESS_KEY = sys.argv[2]
-EC2 = boto3.resource('ec2', region_name='us-east-1', aws_access_key_id=ACCESS_ID, aws_secret_access_key=ACCESS_KEY)
-client = boto3.client('ec2', region_name='us-east-1', aws_access_key_id=ACCESS_ID, aws_secret_access_key=ACCESS_KEY)
+# ACCESS_ID = sys.argv[1]
+# ACCESS_KEY = sys.argv[2]
+EC2 = boto3.resource('ec2', region_name='us-east-1')
+client = boto3.client('ec2', region_name='us-east-1')
 
 
 def get_instances_data():
@@ -50,15 +50,19 @@ def get_instances_data():
     data = client.describe_instances()
     instances = [d['Instances'][0] for d in data['Reservations']]
     for instance in instances:
+        is_load_balancer = False
         if(instance['Tags'] == None):
             continue
         for idx, tag in enumerate(instance['Tags'], start=1):
-            # print(tag['Value'], instance['State']['Name'])
-            if(tag['Value'] == OWNER_NAME and instance['State']['Name'] == 'running'):
-                sec_group_id = [sec['GroupId'] for sec in instance['NetworkInterfaces'][0]['Groups']]
-                key_pair_name = instance['KeyName']
-                image_id = instance['ImageId']
-                return sec_group_id, key_pair_name, image_id
+            # print(tag['Value'])
+            if(tag['Key'] == 'Type' and tag['Value'] == 'loadbalancer'):
+                for idx, tag in enumerate(instance['Tags'], start=1):
+                    if(tag['Value'] == OWNER_NAME and instance['State']['Name'] == 'running'):
+                        # print(tag)
+                        sec_group_id = [sec['GroupId'] for sec in instance['NetworkInterfaces'][0]['Groups']]
+                        key_pair_name = instance['KeyName']
+                        image_id = instance['ImageId']
+                        return sec_group_id, key_pair_name, image_id
     return None
             
 
@@ -111,6 +115,8 @@ def create_instance(key_pair, security_group, instance_type):
     print('CREATED instance ', instance_id)
     
 
+
+
 def get_instances_ip():
     ''' Get all instances with the owner '''
     global OWNER_NAME
@@ -137,8 +143,10 @@ def destroy_instance(instance_id):
     for instance in EC2.instances.all():
         if(instance.tags == None):
           continue
-        for idx, tag in enumerate(instance.tags, start=1):
-            if(tag['Value'] == OWNER_NAME and instance.state['Code'] != 48 and instance.id == instance_id):
+        for idx, tag in enumerate(instance['Tags'], start=1):
+          if(tag['Key'] == 'Type' and tag['Value'] != 'loadbalancer'):
+            for idx, tag in enumerate(instance.tags, start=1):
+                if(tag['Value'] == OWNER_NAME and instance.state['Code'] != 48 and instance.id == instance_id):
                 waiter = client.get_waiter('instance_terminated')
                 try:
                     update_available_instances()
