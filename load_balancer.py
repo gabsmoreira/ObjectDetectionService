@@ -3,7 +3,7 @@ import requests
 import boto3
 import time
 import signal
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify, Response, redirect   
 import json
 import sys
 
@@ -115,8 +115,6 @@ def create_instance(key_pair, security_group, instance_type):
     print('CREATED instance ', instance_id)
     
 
-
-
 def get_instances_ip():
     ''' Get all instances with the owner '''
     global OWNER_NAME
@@ -130,7 +128,7 @@ def get_instances_ip():
           continue
         #print(instance.tags)
         for idx, tag in enumerate(instance.tags, start=1):
-           if(tag['Value'] == OWNER_NAME and instance.state['Code'] != 48):
+           if(tag['Value'] == OWNER_NAME and instance.state['Name'] == 'running'):
                running_instances.append({instance.id : instance.public_dns_name})
     print(running_instances)
     return running_instances
@@ -146,24 +144,18 @@ def update_available_instances():
 
 def destroy_instance(instance_id):
     print(f'Destroying instance {instance_id}')
-    for instance in EC2.instances.all():
-        if(instance.tags == None):
-          continue
-        for idx, tag in enumerate(instance.tags, start=1):
-          if(tag['Key'] == 'Type' and tag['Value'] != 'loadbalancer'):
-            for idx, tag in enumerate(instance.tags, start=1):
-                if(tag['Value'] == OWNER_NAME and instance.state['Code'] != 48 and instance.id == instance_id):
-                    waiter = client.get_waiter('instance_terminated')
-                    try:
-                        update_available_instances()
-                        client.terminate_instances(InstanceIds=[instance.id])
-                        waiter.wait(InstanceIds=[instance.id])
-                        # INSTANCES_RUNNING -=1
-                        print('Destroyed instance ', instance.id)
+    try:
+        waiter = client.get_waiter('instance_terminated')
+        update_available_instances()
+        client.terminate_instances(InstanceIds=[instance_id])
+        waiter.wait(InstanceIds=[instance_id])
+        # INSTANCES_RUNNING -=1
+        print('Destroyed instance ', instance_id)
 
-                    except:
-                        print('Error to delete instance')
-                # ec2.instances.filter(InstasnceIds=[instance.id]).terminate()
+    except Exception as e:
+        print(e)
+        print('Error to delete instance')
+    # ec2.instances.filter(InstasnceIds=[instance.id]).terminate()
 
 def signal_handler(sig, frame):
     RUN_ALL = False
@@ -174,23 +166,21 @@ signal.signal(signal.SIGINT, signal_handler)
 def check_health():
     '''Function that will run inside the thread. Check for problematic instances'''
     while RUN_ALL:
+        update_available_instances()
         for instance in RUNNING_INSTANCES:
             # print(instance)
             for instance_id in instance:
                 ip = instance[instance_id]
-                print('http://' + ip +':5000/healthcheck')
                 try:
-                    #print('http://' + ip +':5000/healthcheck')
                     r = requests.get('http://' + ip +':5000/healthcheck', timeout=TIMEOUT)
-                    # print(f'Requested: {ip}')
                 except Exception as e:
                     print(e)
                     destroy_instance(instance_id)
-                    create_instance(KEY_PAIR_NAME, SECURITY_GROUP_IDs, INSTANCE_TYPE)
+                    # create_instance(KEY_PAIR_NAME, SECURITY_GROUP_IDs, INSTANCE_TYPE)
 
         update_available_instances()
         dif = NUMBER_OF_INSTANCES - len(RUNNING_INSTANCES)
-        print(dif)
+        print('AVAILABLE INSTANCES: 'dif)
         if(dif != 0):
             if(dif < 0):
                 for i in range(-dif):
@@ -240,5 +230,3 @@ def predict_route():
 
 
 app.run(host='0.0.0.0', port=5000)
-
-#http://localhost:8000/predict?image_url=https://raw.githubusercontent.com/zhreshold/mxnet-ssd/master/data/demo/dog.jpg&limit=0.3
