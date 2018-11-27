@@ -59,7 +59,6 @@ def predict_route():
 
 @app.route('/healthcheck', methods = ['GET'])
 def healthcheck():
-    time.sleep(2)
     return Response(status=200)
   
 app.run(host='0.0.0.0', port=5000)
