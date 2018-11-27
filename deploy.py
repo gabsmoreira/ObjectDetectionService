@@ -92,7 +92,7 @@ if(IMAGE_ID == None):
 
 print(IMAGE_ID, KEY_PAIR_NAME,security_group_id)
 try:
-    instance = ec2.run_instances(
+    load_balancer = ec2.run_instances(
         ImageId=IMAGE_ID, 
         MinCount=1, MaxCount=1,
         InstanceType="t2.medium",
@@ -104,9 +104,25 @@ try:
             }],
         UserData=INIT_SCRIPT
         )
-    print("Instance creation response: \n", instance)
+    # print("Instance creation response: \n", load_balancer)
     # pass
 
+    waiter = ec2.get_waiter('instance_running')
+    waiter.wait(InstanceIds=[load_balancer['Instances'][0]['InstanceId']])
+    instance_id = load_balancer['Instances'][0]['InstanceId']
+    data = ec2.describe_instances()
+    instances = [d['Instances'][0] for d in data['Reservations']]
+    for instance in instances:
+        if(instance['Tags'] == None):
+            continue
+        for idx, tag in enumerate(instance['Tags'], start=1):
+            if(tag['Value'] == OWNER_NAME and instance['InstanceId'] == instance_id):
+                ip = instance['NetworkInterfaces'][0]['Association']['PublicIp']
+                web = instance['NetworkInterfaces'][0]['Association']['PublicDnsName']
+
+
+    print(f'IP: {ip}')
+    print(f'ACCESS: {web}')
 except ClientError as e:
     print("An error occured while trying to create an Instance")
     print(e)

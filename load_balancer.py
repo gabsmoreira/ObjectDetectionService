@@ -240,3 +240,5 @@ def predict_route():
 
 
 app.run(host='0.0.0.0', port=5000)
+
+#http://localhost:8000/predict?image_url=https://raw.githubusercontent.com/zhreshold/mxnet-ssd/master/data/demo/dog.jpg&limit=0.3
