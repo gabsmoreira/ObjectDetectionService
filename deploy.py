@@ -80,8 +80,8 @@ if(security_group_exists == False):
             'ToPort': 22,
             'IpRanges': [{'CidrIp': '0.0.0.0/0'}]},
             {'IpProtocol': 'tcp',
-            'FromPort': 8000,
-            'ToPort': 8000,
+            'FromPort': 5000,
+            'ToPort': 5000,
             'IpRanges': [{'CidrIp': '0.0.0.0/0'}]}
         ])
 
